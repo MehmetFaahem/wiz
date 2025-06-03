@@ -1,3 +1,4 @@
+
 'use server';
 
 /**
@@ -42,32 +43,25 @@ const generateQuizPrompt = ai.definePrompt({
         "Answer 3",
         "Answer 4"
       ],
-      "correctAnswerIndex": 0
+      "correctAnswerIndex": 0,
+      "explanation": "Optional explanation for the answer."
     },
-   {
-      "question": "Question 2",
+    // ... more questions ...
+    {
+      "question": "Question 20",
       "answers": [
         "Answer 1",
         "Answer 2",
         "Answer 3",
         "Answer 4"
       ],
-      "correctAnswerIndex": 2
-    },
-   {
-      "question": "Question 3",
-      "answers": [
-        "Answer 1",
-        "Answer 2",
-        "Answer 3",
-        "Answer 4"
-      ],
-      "correctAnswerIndex": 3
+      "correctAnswerIndex": 2,
+      "explanation": "Optional explanation for why this is correct."
     }
   ]
 }
 
-Ensure the JSON is valid and can be parsed without errors. The quiz must contain 3 questions.
+Ensure the JSON is valid and can be parsed without errors. The quiz must contain 20 questions. Each question should have between 2 and 4 answer choices. Include a brief 'explanation' field for each question, explaining the correct answer.
 `,
 });
 
@@ -82,3 +76,4 @@ const generateQuizFlow = ai.defineFlow(
     return output!;
   }
 );
+

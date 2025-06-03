@@ -1,6 +1,7 @@
+
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { generateQuiz, GenerateQuizInput } from '@/ai/flows/generate-quiz';
 import type { Quiz } from '@/types/quiz';
 import QuizGeneratorForm from '@/components/quiz-generator-form';
@@ -10,8 +11,8 @@ import { Loader2, Brain } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 
-
 type QuizAppState = 'idle' | 'generating' | 'active' | 'completed';
+const QUIZ_DURATION_PER_QUESTION = 30; // seconds
 
 export default function HomePage() {
   const [quizState, setQuizState] = useState<QuizAppState>('idle');
@@ -22,6 +23,45 @@ export default function HomePage() {
   const [score, setScore] = useState<number>(0);
   const { toast } = useToast();
 
+  const [timeLeft, setTimeLeft] = useState<number | null>(null);
+  const [isTimerActive, setIsTimerActive] = useState<boolean>(false);
+  const [timeTaken, setTimeTaken] = useState<number | null>(null);
+
+  const calculateResults = useCallback(() => {
+    if (!quizData) return 0;
+    let correctAnswers = 0;
+    quizData.questions.forEach((q, index) => {
+      if (userAnswers[index] === q.correctAnswerIndex) {
+        correctAnswers++;
+      }
+    });
+    setScore(correctAnswers);
+    
+    if (timeLeft !== null) {
+      const duration = (quizData?.questions.length ?? 0) * QUIZ_DURATION_PER_QUESTION;
+      setTimeTaken(duration - timeLeft);
+    }
+    return correctAnswers;
+  }, [quizData, userAnswers, timeLeft]);
+
+  useEffect(() => {
+    if (isTimerActive && timeLeft !== null && timeLeft > 0) {
+      const timerId = setInterval(() => {
+        setTimeLeft((prevTime) => (prevTime !== null ? prevTime - 1 : 0));
+      }, 1000);
+      return () => clearInterval(timerId);
+    } else if (isTimerActive && timeLeft === 0) {
+      setIsTimerActive(false);
+      calculateResults();
+      setQuizState('completed');
+      toast({
+        title: "Time's Up!",
+        description: "Your quiz has been automatically submitted. Check your results!",
+        variant: "destructive",
+      });
+    }
+  }, [isTimerActive, timeLeft, calculateResults, toast]);
+
   const handleGenerateQuiz = async (topic: string) => {
     setQuizTopic(topic);
     setQuizState('generating');
@@ -29,6 +69,9 @@ export default function HomePage() {
     setCurrentQuestionIndex(0);
     setScore(0);
     setQuizData(null);
+    setIsTimerActive(false);
+    setTimeLeft(null);
+    setTimeTaken(null);
 
     try {
       const input: GenerateQuizInput = { topic };
@@ -48,25 +91,31 @@ export default function HomePage() {
         return;
       }
       
-      // Validate parsedQuiz structure
       if (
         parsedQuizCandidate &&
         typeof parsedQuizCandidate.title === 'string' &&
         Array.isArray(parsedQuizCandidate.questions) &&
-        parsedQuizCandidate.questions.length > 0 && // Ensure there's at least one question
+        parsedQuizCandidate.questions.length > 0 &&
         parsedQuizCandidate.questions.every(
           (q: any) =>
-            q && // Ensure question object exists
+            q &&
             typeof q.question === 'string' &&
             Array.isArray(q.answers) &&
-            q.answers.length > 0 && // Ensure there's at least one answer choice
+            q.answers.length >= 2 && q.answers.length <=4 &&
             typeof q.correctAnswerIndex === 'number' &&
             q.correctAnswerIndex >= 0 && q.correctAnswerIndex < q.answers.length &&
-            q.answers.every((a: any) => typeof a === 'string')
+            q.answers.every((a: any) => typeof a === 'string') &&
+            (q.explanation === undefined || typeof q.explanation === 'string')
         )
       ) {
-        setQuizData(parsedQuizCandidate as Quiz);
+        const newQuizData = parsedQuizCandidate as Quiz;
+        setQuizData(newQuizData);
         setQuizState('active');
+        
+        const quizDuration = newQuizData.questions.length * QUIZ_DURATION_PER_QUESTION;
+        setTimeLeft(quizDuration);
+        setIsTimerActive(true);
+
         toast({ title: "Quiz Ready!", description: `Your quiz on "${topic}" is here!` });
       } else {
         console.error("Invalid quiz structure received:", parsedQuizCandidate);
@@ -91,23 +140,12 @@ export default function HomePage() {
   const handleAnswerSelect = (questionIndex: number, answerIndex: number) => {
     setUserAnswers(prev => ({ ...prev, [questionIndex]: answerIndex }));
   };
-  
-  const calculateResults = () => {
-    if (!quizData) return 0;
-    let correctAnswers = 0;
-    quizData.questions.forEach((q, index) => {
-      if (userAnswers[index] === q.correctAnswerIndex) {
-        correctAnswers++;
-      }
-    });
-    setScore(correctAnswers);
-    return correctAnswers; // Return for immediate use if needed
-  };
 
   const handleNextQuestion = () => {
     if (quizData && currentQuestionIndex < quizData.questions.length - 1) {
       setCurrentQuestionIndex(prev => prev + 1);
     } else {
+      setIsTimerActive(false);
       calculateResults(); 
       setQuizState('completed');
     }
@@ -120,6 +158,9 @@ export default function HomePage() {
     setCurrentQuestionIndex(0);
     setUserAnswers({});
     setScore(0);
+    setIsTimerActive(false);
+    setTimeLeft(null);
+    setTimeTaken(null);
   };
 
   return (
@@ -141,7 +182,7 @@ export default function HomePage() {
             <CardContent className="p-8 flex flex-col items-center justify-center min-h-[300px]">
               <Loader2 className="h-16 w-16 text-primary animate-spin mb-6" />
               <p className="text-xl text-foreground font-semibold">Generating your quiz on "{quizTopic}"...</p>
-              <p className="text-muted-foreground">Please wait a moment.</p>
+              <p className="text-muted-foreground">This might take a moment, especially for longer quizzes.</p>
             </CardContent>
           </Card>
         )}
@@ -153,6 +194,7 @@ export default function HomePage() {
             selectedAnswer={userAnswers[currentQuestionIndex]}
             onNextQuestion={handleNextQuestion}
             totalQuestions={quizData.questions.length}
+            timeLeft={timeLeft}
           />
         )}
         {quizState === 'completed' && quizData && (
@@ -162,6 +204,7 @@ export default function HomePage() {
             score={score}
             onRestart={handleRestartQuiz}
             topic={quizTopic}
+            timeTaken={timeTaken}
           />
         )}
       </main>
