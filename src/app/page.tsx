@@ -4,7 +4,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { generateQuiz, GenerateQuizInput } from '@/ai/flows/generate-quiz';
 import type { Quiz } from '@/types/quiz';
-import QuizGeneratorForm from '@/components/quiz-generator-form';
+import QuizGeneratorForm, { type QuizGeneratorFormValues } from '@/components/quiz-generator-form';
 import QuizDisplay from '@/components/quiz-display';
 import QuizResults from '@/components/quiz-results';
 import { Loader2, Brain } from 'lucide-react';
@@ -17,6 +17,7 @@ const QUIZ_DURATION_PER_QUESTION = 30; // seconds
 export default function HomePage() {
   const [quizState, setQuizState] = useState<QuizAppState>('idle');
   const [quizTopic, setQuizTopic] = useState<string>('');
+  const [quizLanguage, setQuizLanguage] = useState<string>('English');
   const [quizData, setQuizData] = useState<Quiz | null>(null);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState<number>(0);
   const [userAnswers, setUserAnswers] = useState<Record<number, number>>({});
@@ -62,8 +63,9 @@ export default function HomePage() {
     }
   }, [isTimerActive, timeLeft, calculateResults, toast]);
 
-  const handleGenerateQuiz = async (topic: string) => {
-    setQuizTopic(topic);
+  const handleGenerateQuiz = async (values: QuizGeneratorFormValues) => {
+    setQuizTopic(values.topic);
+    setQuizLanguage(values.language);
     setQuizState('generating');
     setUserAnswers({});
     setCurrentQuestionIndex(0);
@@ -74,7 +76,7 @@ export default function HomePage() {
     setTimeTaken(null);
 
     try {
-      const input: GenerateQuizInput = { topic };
+      const input: GenerateQuizInput = { topic: values.topic, language: values.language };
       const result = await generateQuiz(input);
       
       let parsedQuizCandidate;
@@ -116,7 +118,7 @@ export default function HomePage() {
         setTimeLeft(quizDuration);
         setIsTimerActive(true);
 
-        toast({ title: "Quiz Ready!", description: `Your quiz on "${topic}" is here!` });
+        toast({ title: "Quiz Ready!", description: `Your quiz on "${values.topic}" in ${values.language} is here!` });
       } else {
         console.error("Invalid quiz structure received:", parsedQuizCandidate);
         toast({
@@ -170,7 +172,7 @@ export default function HomePage() {
           <Brain className="h-12 w-12 text-primary mr-3" />
           <h1 className="text-4xl sm:text-5xl font-headline font-bold text-foreground">Quiz Wiz</h1>
         </div>
-        <p className="text-muted-foreground text-lg">Generate and take quizzes on any topic!</p>
+        <p className="text-muted-foreground text-lg">Generate and take quizzes on any topic, in multiple languages!</p>
       </header>
 
       <main className="w-full max-w-2xl">
@@ -181,7 +183,7 @@ export default function HomePage() {
           <Card className="shadow-xl rounded-xl">
             <CardContent className="p-8 flex flex-col items-center justify-center min-h-[300px]">
               <Loader2 className="h-16 w-16 text-primary animate-spin mb-6" />
-              <p className="text-xl text-foreground font-semibold">Generating your quiz on "{quizTopic}"...</p>
+              <p className="text-xl text-foreground font-semibold">Generating your {quizLanguage} quiz on "{quizTopic}"...</p>
               <p className="text-muted-foreground">This might take a moment, especially for longer quizzes.</p>
             </CardContent>
           </Card>
@@ -205,6 +207,7 @@ export default function HomePage() {
             onRestart={handleRestartQuiz}
             topic={quizTopic}
             timeTaken={timeTaken}
+            language={quizLanguage}
           />
         )}
       </main>

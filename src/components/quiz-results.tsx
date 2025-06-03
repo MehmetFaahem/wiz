@@ -4,7 +4,7 @@
 import type { Quiz } from '@/types/quiz';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Award, RotateCcw, Share2, CheckCircle, XCircle, Clock } from 'lucide-react';
+import { Award, RotateCcw, Share2, CheckCircle, XCircle, Clock, Languages } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { useEffect, useState } from 'react';
@@ -18,6 +18,7 @@ type QuizResultsProps = {
   onRestart: () => void;
   topic: string;
   timeTaken: number | null;
+  language: string;
 };
 
 const formatTimeTaken = (seconds: number | null | undefined): string => {
@@ -34,20 +35,20 @@ const formatTimeTaken = (seconds: number | null | undefined): string => {
     return parts.join(' and ');
 };
 
-export default function QuizResults({ quiz, userAnswers, score, onRestart, topic, timeTaken }: QuizResultsProps) {
+export default function QuizResults({ quiz, userAnswers, score, onRestart, topic, timeTaken, language }: QuizResultsProps) {
   const totalQuestions = quiz.questions.length;
   const percentage = totalQuestions > 0 ? Math.round((score / totalQuestions) * 100) : 0;
   const [shareMessage, setShareMessage] = useState<string>('');
   const { toast } = useToast();
 
   useEffect(() => {
-    let message = `I scored ${score}/${totalQuestions} (${percentage}%) on a Quiz Wiz quiz about "${topic}"!`;
+    let message = `I scored ${score}/${totalQuestions} (${percentage}%) on a Quiz Wiz quiz about "${topic}" in ${language}!`;
     if (timeTaken !== null) {
       message += ` Completed in ${formatTimeTaken(timeTaken)}.`;
     }
     message += " Create your own quiz at Quiz Wiz!";
     setShareMessage(message);
-  }, [score, totalQuestions, percentage, topic, timeTaken]);
+  }, [score, totalQuestions, percentage, topic, timeTaken, language]);
 
   const handleShare = async () => {
     if (navigator.share) {
@@ -90,12 +91,18 @@ export default function QuizResults({ quiz, userAnswers, score, onRestart, topic
         <Award className="h-16 w-16 text-primary mb-4" />
         <CardTitle className="font-headline text-3xl sm:text-4xl">Quiz Complete!</CardTitle>
         <CardDescription className="text-xl mt-1">You scored {score} out of {totalQuestions} ({percentage}%)</CardDescription>
-        {timeTaken !== null && (
-            <p className="text-md text-muted-foreground mt-2 flex items-center">
-                <Clock className="mr-1.5 h-4 w-4" />
-                Completed in: {formatTimeTaken(timeTaken)}
+        <div className="text-md text-muted-foreground mt-2 space-y-1">
+            {timeTaken !== null && (
+                <p className="flex items-center justify-center">
+                    <Clock className="mr-1.5 h-4 w-4" />
+                    Completed in: {formatTimeTaken(timeTaken)}
+                </p>
+            )}
+            <p className="flex items-center justify-center">
+                <Languages className="mr-1.5 h-4 w-4" />
+                Language: {language}
             </p>
-        )}
+        </div>
         <p className="text-muted-foreground mt-3 text-md">{feedbackMessage}</p>
       </CardHeader>
       <CardContent className="space-y-6 py-6">
