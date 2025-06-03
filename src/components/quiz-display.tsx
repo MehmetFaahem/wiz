@@ -32,7 +32,7 @@ export default function QuizDisplay({
   quiz,
   currentQuestionIndex,
   onAnswerSelect,
-  selectedAnswer,
+  selectedAnswer, // This is userAnswers[currentQuestionIndex] from HomePage
   onNextQuestion,
   totalQuestions,
   timeLeft,
@@ -43,16 +43,21 @@ export default function QuizDisplay({
   const [localSelectedAnswer, setLocalSelectedAnswer] = useState<number | undefined>(undefined);
 
   useEffect(() => {
+    // Reset state when the question changes
     setShowFeedback(false);
     setIsCorrect(null);
-    setLocalSelectedAnswer(undefined); 
+    setLocalSelectedAnswer(undefined); // Ensure local selection is cleared for the new question
   }, [currentQuestionIndex]);
   
-  useEffect(() => {
-    if (!showFeedback) {
-        setLocalSelectedAnswer(selectedAnswer);
-    }
-  }, [selectedAnswer, showFeedback]);
+  // Removed the useEffect that was setting localSelectedAnswer from the selectedAnswer prop.
+  // This was:
+  // useEffect(() => {
+  //   if (!showFeedback) {
+  //       setLocalSelectedAnswer(selectedAnswer);
+  //   }
+  // }, [selectedAnswer, showFeedback]);
+  // By removing it, localSelectedAnswer is only undefined on question load, 
+  // or set by user interaction, preventing carry-over.
 
   const handleAnswerSubmission = () => {
     if (localSelectedAnswer === undefined) {
@@ -102,31 +107,37 @@ export default function QuizDisplay({
           aria-label='Answers'
         >
           {question.answers.map((answer, index) => {
-            const isSelectedByPlayer = localSelectedAnswer === index;
+            // For styling feedback, we use localSelectedAnswer because it reflects the choice made for *this* submission.
+            // selectedAnswer (the prop) would be the already stored answer if this question was previously submitted.
             const isCorrectAnswerChoice = question.correctAnswerIndex === index;
             
             return (
               <Label
-                key={index}
-                htmlFor={`answer-${index}-${currentQuestionIndex}`}
+                key={`answer-label-${currentQuestionIndex}-${index}`} // Ensured unique key
+                htmlFor={`answer-item-${currentQuestionIndex}-${index}`}
                 className={cn(
                   "flex items-center space-x-3 p-4 rounded-lg border-2 transition-all duration-300 ease-in-out cursor-pointer",
                   (showFeedback || timeLeft === 0) && "cursor-not-allowed",
                   "hover:border-primary",
                   showFeedback ? 
                     (isCorrectAnswerChoice ? "border-green-500 bg-green-500/10" : 
-                     (isSelectedByPlayer ? "border-red-500 bg-red-500/10" : "border-border opacity-70"))
-                    : (isSelectedByPlayer ? "border-primary bg-primary/10" : "border-input"),
-                  showFeedback && isSelectedByPlayer && !isCorrectAnswerChoice && "ring-2 ring-red-500",
+                     (localSelectedAnswer === index ? "border-red-500 bg-red-500/10" : "border-border opacity-70"))
+                    : (localSelectedAnswer === index ? "border-primary bg-primary/10" : "border-input"),
+                  showFeedback && localSelectedAnswer === index && !isCorrectAnswerChoice && "ring-2 ring-red-500",
                   showFeedback && isCorrectAnswerChoice && "ring-2 ring-green-500",
-                  !showFeedback && isSelectedByPlayer && "ring-2 ring-primary"
+                  !showFeedback && localSelectedAnswer === index && "ring-2 ring-primary"
                 )}
               >
-                <RadioGroupItem value={String(index)} id={`answer-${index}-${currentQuestionIndex}`} className="h-5 w-5 shrink-0" disabled={showFeedback || timeLeft === 0} />
+                <RadioGroupItem 
+                  value={String(index)} 
+                  id={`answer-item-${currentQuestionIndex}-${index}`} 
+                  className="h-5 w-5 shrink-0" 
+                  disabled={showFeedback || timeLeft === 0} 
+                />
                 <span className="text-base sm:text-lg flex-grow">{answer}</span>
-                {showFeedback && isSelectedByPlayer && isCorrect && <CheckCircle className="ml-auto h-6 w-6 text-green-600 shrink-0" />}
-                {showFeedback && isSelectedByPlayer && !isCorrect && <XCircle className="ml-auto h-6 w-6 text-red-600 shrink-0" />}
-                {showFeedback && !isSelectedByPlayer && isCorrectAnswerChoice && <HelpCircle data-ai-hint="information help" className="ml-auto h-6 w-6 text-green-700 opacity-80 shrink-0" />}
+                {showFeedback && localSelectedAnswer === index && isCorrect && <CheckCircle className="ml-auto h-6 w-6 text-green-600 shrink-0" />}
+                {showFeedback && localSelectedAnswer === index && !isCorrect && <XCircle className="ml-auto h-6 w-6 text-red-600 shrink-0" />}
+                {showFeedback && localSelectedAnswer !== index && isCorrectAnswerChoice && <HelpCircle data-ai-hint="information help" className="ml-auto h-6 w-6 text-green-700 opacity-80 shrink-0" />}
               </Label>
             );
           })}
