@@ -32,7 +32,7 @@ export default function QuizDisplay({
   quiz,
   currentQuestionIndex,
   onAnswerSelect,
-  selectedAnswer, // This is userAnswers[currentQuestionIndex] from HomePage
+  selectedAnswer, 
   onNextQuestion,
   totalQuestions,
   timeLeft,
@@ -46,18 +46,9 @@ export default function QuizDisplay({
     // Reset state when the question changes
     setShowFeedback(false);
     setIsCorrect(null);
-    setLocalSelectedAnswer(undefined); // Ensure local selection is cleared for the new question
+    setLocalSelectedAnswer(undefined); 
   }, [currentQuestionIndex]);
   
-  // Removed the useEffect that was setting localSelectedAnswer from the selectedAnswer prop.
-  // This was:
-  // useEffect(() => {
-  //   if (!showFeedback) {
-  //       setLocalSelectedAnswer(selectedAnswer);
-  //   }
-  // }, [selectedAnswer, showFeedback]);
-  // By removing it, localSelectedAnswer is only undefined on question load, 
-  // or set by user interaction, preventing carry-over.
 
   const handleAnswerSubmission = () => {
     if (localSelectedAnswer === undefined) {
@@ -100,6 +91,7 @@ export default function QuizDisplay({
         <p className="text-xl sm:text-2xl font-semibold text-foreground min-h-[3em]">{question.question}</p>
         
         <RadioGroup
+          key={`quiz-question-${currentQuestionIndex}-options`} // Force re-render of RadioGroup
           value={localSelectedAnswer !== undefined ? String(localSelectedAnswer) : undefined}
           onValueChange={(value) => setLocalSelectedAnswer(Number(value))}
           disabled={showFeedback || timeLeft === 0}
@@ -107,13 +99,11 @@ export default function QuizDisplay({
           aria-label='Answers'
         >
           {question.answers.map((answer, index) => {
-            // For styling feedback, we use localSelectedAnswer because it reflects the choice made for *this* submission.
-            // selectedAnswer (the prop) would be the already stored answer if this question was previously submitted.
             const isCorrectAnswerChoice = question.correctAnswerIndex === index;
             
             return (
               <Label
-                key={`answer-label-${currentQuestionIndex}-${index}`} // Ensured unique key
+                key={`answer-label-${currentQuestionIndex}-${index}`} 
                 htmlFor={`answer-item-${currentQuestionIndex}-${index}`}
                 className={cn(
                   "flex items-center space-x-3 p-4 rounded-lg border-2 transition-all duration-300 ease-in-out cursor-pointer",
