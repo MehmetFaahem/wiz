@@ -54,7 +54,7 @@ export default function QuizResults({ quiz, userAnswers, score, onRestart, topic
     if (navigator.share) {
       try {
         await navigator.share({
-          title: 'My Quiz Wiz Result!',
+          title: 'My Wiz Result!',
           text: shareMessage,
           url: window.location.href, 
         });

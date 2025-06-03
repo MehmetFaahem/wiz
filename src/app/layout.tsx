@@ -3,7 +3,7 @@ import './globals.css';
 import { Toaster } from "@/components/ui/toaster";
 
 export const metadata: Metadata = {
-  title: 'Quiz Wiz',
+  title: 'Wiz',
   description: 'Generate and take quizzes on any topic!',
 };
 

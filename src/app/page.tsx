@@ -170,7 +170,7 @@ export default function HomePage() {
       <header className="mb-8 text-center">
         <div className="flex items-center justify-center mb-2">
           <Brain className="h-12 w-12 text-primary mr-3" />
-          <h1 className="text-4xl sm:text-5xl font-headline font-bold text-foreground">Quiz Wiz</h1>
+          <h1 className="text-4xl sm:text-5xl font-headline font-bold text-foreground">Wiz</h1>
         </div>
         <p className="text-muted-foreground text-lg">Generate and take quizzes on any topic, in multiple languages!</p>
       </header>
@@ -212,7 +212,7 @@ export default function HomePage() {
         )}
       </main>
       <footer className="mt-12 text-center text-muted-foreground text-sm">
-        <p>&copy; {new Date().getFullYear()} Quiz Wiz. Powered by AI.</p>
+        <p>&copy; {new Date().getFullYear()} Quiz Wiz. Powered by Fahim AI.</p>
       </footer>
     </div>
   );
